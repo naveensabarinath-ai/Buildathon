@@ -1,0 +1,58 @@
+Total schemes processed: 52
+With detail records: 52
+Empty detail tables: 0
+Errors: 0
+
+SCHEME-BY-SCHEME REPORT
+Sub-Mission on Agricultural Mechanisation (Agri) | ID=147 | Details=6 | Status=success
+Chief Minister’s Mannuyir Kaathu Mannuyir Kaappom Scheme | ID=153 | Details=6 | Status=success
+Tamil Nadu Irrigated Agriculture Modernization Project (TNIAMP) -2023-24 | ID=144 | Details=7 | Status=success
+Kalaignar’s All Village Integrated Agriculture Development Programme (KAVIADP) 2022-2023 | ID=60 | Details=2 | Status=success
+Rainfed Area Development- IFS 2024-25 | ID=162 | Details=2 | Status=success
+Tamil Nadu Irrigated Agriculture Modernisation Project (TNIAMP) | ID=91 | Details=2 | Status=success
+Pradhan Mantri Krishi Sinchayee yojana (PMKSY) - Micro Irrigation(MI) | ID=114 | Details=2 | Status=success
+State Horticulture Development Scheme (SHDS)-2024-25 | ID=152 | Details=2 | Status=success
+Palmyrah Development Mission (PDM)-2024-25 | ID=156 | Details=2 | Status=success
+Kalaignar All Village Integrated Development Program 2024-25 | ID=159 | Details=4 | Status=success
+Paramparagat Krishi Vikas Yojana-2024-25 | ID=160 | Details=3 | Status=success
+Chief Minister's Scheme of Solar Powered Pump-set | ID=74 | Details=30 | Status=success
+National Horticulture Mission (NHM)-2024-25 | ID=155 | Details=1 | Status=success
+National Agriculture Development Programme (NADP)-2024-25 | ID=157 | Details=99 | Status=success
+National Mission on Edible Oil –Oil Palm-2024-25 | ID=158 | Details=99 | Status=success
+Tamil Nadu Irrigated Agriculture Modernisation Project (TNIAMP) 24-25 | ID=161 | Details=99 | Status=success
+Installation of Solar Fencing Unit | ID=76 | Details=99 | Status=success
+NPOP Certificate | ID=89 | Details=3 | Status=success
+Tamil Nadu Irrigated Agriculture Modernisation Project | ID=62 | Details=3 | Status=success
+Regulated Market | ID=63 | Details=1 | Status=success
+Farmer Producer Organisations | ID=64 | Details=1 | Status=success
+Uzhavar sandhai | ID=65 | Details=1 | Status=success
+Price Support Scheme | ID=66 | Details=1 | Status=success
+Pradhan Mantri Formalisation of Micro Food Processing Enterprises | ID=67 | Details=1 | Status=success
+Supply Chain Management | ID=68 | Details=1 | Status=success
+Cold storage units | ID=69 | Details=1 | Status=success
+e-NAM | ID=70 | Details=1 | Status=success
+ICAR- KVK Training | ID=93 | Details=1 | Status=success
+tester | ID=194 | Details=1 | Status=success
+tester' | ID=195 | Details=1 | Status=success
+tester" | ID=196 | Details=1 | Status=success
+tester" | ID=197 | Details=30 | Status=success
+tester` | ID=198 | Details=30 | Status=success
+tester` | ID=199 | Details=30 | Status=success
+tester | ID=200 | Details=30 | Status=success
+tester | ID=201 | Details=30 | Status=success
+tester | ID=202 | Details=30 | Status=success
+tester | ID=203 | Details=30 | Status=success
+tester | ID=204 | Details=30 | Status=success
+tester | ID=205 | Details=30 | Status=success
+tester | ID=206 | Details=30 | Status=success
+tester | ID=207 | Details=30 | Status=success
+tester | ID=208 | Details=30 | Status=success
+tester | ID=209 | Details=30 | Status=success
+tester | ID=210 | Details=30 | Status=success
+tester | ID=211 | Details=30 | Status=success
+tester | ID=212 | Details=30 | Status=success
+tester | ID=217 | Details=30 | Status=success
+tester | ID=218 | Details=30 | Status=success
+tester | ID=219 | Details=30 | Status=success
+NADP -Sugarcane crop improvement | ID=61 | Details=30 | Status=success
+tester | ID=220 | Details=4 | Status=success

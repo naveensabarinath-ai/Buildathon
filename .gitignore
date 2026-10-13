@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+.env
+venv/
+venv_rag/
+__pycache__/
+*.pyc
+data/*.db
+data/*.json
+chat_usage.db
+indexes/*
+!indexes/.gitkeep
