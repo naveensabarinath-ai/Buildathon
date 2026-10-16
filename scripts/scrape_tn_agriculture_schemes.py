@@ -11,7 +11,7 @@ Install once:
     python -m playwright install chromium
 
 Run:
-    python pipeline\scrape_tn_agriculture_schemes.py
+    python -m scripts.scrape_tn_agriculture_schemes
 """
 
 import json

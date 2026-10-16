@@ -1,8 +1,7 @@
 langchain-core
-langchain-community
 langchain-openai
 langchain-text-splitters
-faiss-cpu
+networkx
 python-dotenv
 fastapi
 uvicorn[standard]
@@ -10,6 +9,4 @@ streamlit
 httpx
 playwright
 beautifulsoup4
-openai
-tiktoken
 langsmith

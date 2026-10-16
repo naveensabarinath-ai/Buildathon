@@ -1,10 +1,8 @@
 """Phase 4 FastAPI backend. Reuses the Phase 3 RAG implementation."""
-import importlib.util
 import logging
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -12,7 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from langsmith import traceable, tracing_context
-from services import chat_usage
+from scripts import agriculture_rag as rag
+from scripts import chat_usage
+from scripts import graph_retriever as kg_retrieval
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BASE_DIR / '.env')
@@ -26,25 +26,10 @@ if LANGSMITH_TRACING and not os.getenv('LANGSMITH_API_KEY'):
     raise RuntimeError('LANGSMITH_TRACING is enabled but LANGSMITH_API_KEY is not set.')
 
 
-def load_phase3():
-    spec = importlib.util.spec_from_file_location(
-        'tn_agri_phase3', BASE_DIR / 'pipeline' / 'agriculture_rag.py'
-    )
-    if spec is None or spec.loader is None:
-        raise RuntimeError('Cannot import Phase 3 script')
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-rag = load_phase3()
-
-
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=2000)
     scheme_id: str | None = Field(default=None, max_length=32)
     k: int = Field(default=5, ge=1, le=20)
-    mode: Literal['mmr', 'similarity'] = 'mmr'
 
 
 class SourceItem(BaseModel):
@@ -71,18 +56,25 @@ app.add_middleware(CORSMiddleware, allow_origins=['http://localhost:8501', 'http
 
 @lru_cache(maxsize=1)
 def get_services():
-    """Load the FAISS store, scheme catalog, and model once per API process."""
-    store = rag.retrieval.load_store(BASE_DIR / 'indexes' / 'faiss_tn_agriculture')
-    catalog = rag.scheme_catalog(store)
+    """Load the graph, scheme catalog, and chat model."""
+    manifest = BASE_DIR / 'indexes' / 'graph_manifest.json'
+    if not manifest.is_file():
+        raise FileNotFoundError('Graph manifest missing; build the knowledge graph.')
+    expected_digest = manifest.read_text(encoding='utf-8').strip()
+    graph = kg_retrieval.load_graph(
+        BASE_DIR / 'indexes' / 'agriculture_knowledge_graph.json',
+        expected_digest=expected_digest,
+    )
+    catalog = kg_retrieval.scheme_catalog(graph)
     llm = ChatOpenAI(model=os.getenv('OPENAI_CHAT_MODEL', 'gpt-4.1-mini'), temperature=0, timeout=60, max_retries=2)
-    return store, catalog, llm
+    return graph, catalog, llm
 
 
 @traceable(name='chatbot_question', run_type='chain')
-def traceable_answer(question, scheme_id, k, mode):
-    store, catalog, llm = get_services()
+def traceable_answer(question, scheme_id, k):
+    graph, catalog, llm = get_services()
     return rag.answer_question(
-        store, llm, question, catalog, k=k, mode=mode, scheme_id=scheme_id
+        graph, llm, question, catalog, k=k, scheme_id=scheme_id,
     )
 
 
@@ -90,8 +82,12 @@ def traceable_answer(question, scheme_id, k, mode):
 def health():
     """Basic health; does not trigger an embedding or LLM API call."""
     try:
-        store, catalog, _ = get_services()
-        return {'status': 'ok', 'vectors': int(store.index.ntotal), 'schemes': len(catalog)}
+        graph, catalog, _ = get_services()
+        return {
+            'status': 'ok',
+            'schemes': len(catalog),
+            'graph_nodes': graph.number_of_nodes(),
+        }
     except Exception:
         logger.exception('Health check failed')
         raise HTTPException(status_code=503, detail='Service not ready. Check API logs and local configuration.')
@@ -118,10 +114,10 @@ def ask(payload: AskRequest):
         with tracing_context(
             enabled=LANGSMITH_TRACING,
             project_name=LANGSMITH_PROJECT,
-            tags=['chatbot', payload.mode],
+            tags=['chatbot', 'knowledge-graph'],
         ):
             result = traceable_answer(
-                payload.question, payload.scheme_id, payload.k, payload.mode
+                payload.question, payload.scheme_id, payload.k
             )
         usage = result.get('usage')
         if usage and usage.get('prompt_tokens') is not None and usage.get('completion_tokens') is not None:
@@ -129,7 +125,6 @@ def ask(payload: AskRequest):
                 tracked = chat_usage.record(
                     model=usage['model'], prompt_tokens=usage['prompt_tokens'],
                     completion_tokens=usage['completion_tokens'],
-                    embedding_estimate=chat_usage.estimate_embedding_tokens(payload.question),
                     scheme_id=result.get('retrieval', {}).get('scheme_id'),
                     source_count=len(result.get('sources', [])))
                 result['usage'] = tracked
@@ -142,4 +137,4 @@ def ask(payload: AskRequest):
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception:
         logger.exception('Question processing failed')
-        raise HTTPException(status_code=502, detail='Unable to generate answer. Check API logs, OpenAI access, and FAISS files.')
+        raise HTTPException(status_code=502, detail='Unable to generate answer. Check API logs, OpenAI access, and the knowledge-graph artifact.')

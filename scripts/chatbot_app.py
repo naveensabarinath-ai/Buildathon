@@ -101,25 +101,26 @@ def api_get(path):
 status = api_get('/health')
 if not status:
     st.error('Assistant service is offline. Start the local API, then refresh this page.')
-    st.code('python -m uvicorn apps.chatbot_api:app --host 127.0.0.1 --port 8000')
+    st.code('python -m uvicorn scripts.chatbot_api:app --host 127.0.0.1 --port 8000')
     st.stop()
 
 st.sidebar.markdown('<div class="sidebar-heading">🌿 Assistant settings</div>', unsafe_allow_html=True)
-st.sidebar.success(f"Connected · {status['schemes']} schemes · {status['vectors']:,} chunks")
+st.sidebar.success(
+    f"Connected · {status['schemes']} schemes · {status['graph_nodes']:,} graph nodes"
+)
 schemes = api_get('/schemes') or []
 choices = {'Automatic detection': None}
 for item in schemes:
     choices[f"{item['scheme_name']} (ID {item['scheme_id']})"] = item['scheme_id']
 with st.sidebar:
     selected = st.selectbox('🎯 Scheme filter', list(choices), help='Choose a scheme or let the assistant detect one from your question.')
-    mode = st.selectbox('🔎 Search method', ['mmr', 'similarity'])
-    top_k = st.slider('📚 Results to search', 1, 15, 5)
+    top_k = st.slider('📚 Graph records to retrieve', 1, 15, 5)
     show_excerpts = st.checkbox('Show source excerpts', value=False)
     st.divider()
     if st.button('🗑️ Clear conversation', use_container_width=True):
         st.session_state['messages'] = []
         st.rerun()
-    st.caption('Answers use the locally indexed scheme records.')
+    st.caption('Answers use entities, relationships, and source text in the local knowledge graph.')
 
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
@@ -129,7 +130,7 @@ for message in st.session_state['messages']:
         st.markdown(message['content'])
         if message.get('usage'):
             u = message['usage']
-            st.caption(f"LLM tokens: {u.get('total_tokens', 0):,} (input {u.get('prompt_tokens', 0):,} / output {u.get('completion_tokens', 0):,}) | Estimated query embedding: {u.get('query_embedding_tokens_estimate', 0):,} tokens | Est. USD ${u.get('estimated_cost_usd', 0):.6f}")
+            st.caption(f"LLM tokens: {u.get('total_tokens', 0):,} (input {u.get('prompt_tokens', 0):,} / output {u.get('completion_tokens', 0):,}) | Est. USD ${u.get('estimated_cost_usd', 0):.6f}")
         if message.get('sources'):
             with st.expander(f"Sources ({len(message['sources'])})"):
                 for source in message['sources']:
@@ -146,7 +147,7 @@ if question:
         with st.spinner('Searching indexed schemes and generating an answer...'):
             try:
                 with httpx.Client(timeout=TIMEOUT) as client:
-                    response = client.post(f'{API_URL}/ask', json={'question': question, 'scheme_id': choices[selected], 'mode': mode, 'k': top_k})
+                    response = client.post(f'{API_URL}/ask', json={'question': question, 'scheme_id': choices[selected], 'k': top_k})
                     response.raise_for_status()
                     result = response.json()
             except httpx.HTTPStatusError as exc:
@@ -167,5 +168,5 @@ if question:
                             st.text(source['excerpt'])
             if result.get('usage'):
                 u = result['usage']
-                st.caption(f"LLM tokens: {u['total_tokens']:,} (input {u['prompt_tokens']:,} / output {u['completion_tokens']:,}) · Estimated query-embedding tokens: {u['query_embedding_tokens_estimate']:,} · Est. cost: ${u['estimated_cost_usd']:.6f}")
+                st.caption(f"LLM tokens: {u['total_tokens']:,} (input {u['prompt_tokens']:,} / output {u['completion_tokens']:,}) · Est. cost: ${u['estimated_cost_usd']:.6f}")
             st.session_state['messages'].append({'role': 'assistant', 'content': result['answer'], 'sources': result.get('sources', []), 'usage': result.get('usage')})

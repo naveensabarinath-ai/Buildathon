@@ -11,18 +11,18 @@ Kalaignar’s All Village Integrated Agriculture Development Programme (KAVIADP)
 Rainfed Area Development- IFS 2024-25 | ID=162 | Details=2 | Status=success
 Tamil Nadu Irrigated Agriculture Modernisation Project (TNIAMP) | ID=91 | Details=2 | Status=success
 Pradhan Mantri Krishi Sinchayee yojana (PMKSY) - Micro Irrigation(MI) | ID=114 | Details=2 | Status=success
-State Horticulture Development Scheme (SHDS)-2024-25 | ID=152 | Details=2 | Status=success
-Palmyrah Development Mission (PDM)-2024-25 | ID=156 | Details=2 | Status=success
-Kalaignar All Village Integrated Development Program 2024-25 | ID=159 | Details=4 | Status=success
+State Horticulture Development Scheme (SHDS)-2024-25 | ID=152 | Details=31 | Status=success
+Palmyrah Development Mission (PDM)-2024-25 | ID=156 | Details=50 | Status=success
+Kalaignar All Village Integrated Development Program 2024-25 | ID=159 | Details=50 | Status=success
 Paramparagat Krishi Vikas Yojana-2024-25 | ID=160 | Details=3 | Status=success
-Chief Minister's Scheme of Solar Powered Pump-set | ID=74 | Details=30 | Status=success
+Chief Minister's Scheme of Solar Powered Pump-set | ID=74 | Details=3 | Status=success
 National Horticulture Mission (NHM)-2024-25 | ID=155 | Details=1 | Status=success
 National Agriculture Development Programme (NADP)-2024-25 | ID=157 | Details=99 | Status=success
-National Mission on Edible Oil –Oil Palm-2024-25 | ID=158 | Details=99 | Status=success
-Tamil Nadu Irrigated Agriculture Modernisation Project (TNIAMP) 24-25 | ID=161 | Details=99 | Status=success
-Installation of Solar Fencing Unit | ID=76 | Details=99 | Status=success
-NPOP Certificate | ID=89 | Details=3 | Status=success
-Tamil Nadu Irrigated Agriculture Modernisation Project | ID=62 | Details=3 | Status=success
+National Mission on Edible Oil –Oil Palm-2024-25 | ID=158 | Details=36 | Status=success
+Tamil Nadu Irrigated Agriculture Modernisation Project (TNIAMP) 24-25 | ID=161 | Details=13 | Status=success
+Installation of Solar Fencing Unit | ID=76 | Details=13 | Status=success
+NPOP Certificate | ID=89 | Details=13 | Status=success
+Tamil Nadu Irrigated Agriculture Modernisation Project | ID=62 | Details=1 | Status=success
 Regulated Market | ID=63 | Details=1 | Status=success
 Farmer Producer Organisations | ID=64 | Details=1 | Status=success
 Uzhavar sandhai | ID=65 | Details=1 | Status=success
@@ -32,9 +32,9 @@ Supply Chain Management | ID=68 | Details=1 | Status=success
 Cold storage units | ID=69 | Details=1 | Status=success
 e-NAM | ID=70 | Details=1 | Status=success
 ICAR- KVK Training | ID=93 | Details=1 | Status=success
-tester | ID=194 | Details=1 | Status=success
-tester' | ID=195 | Details=1 | Status=success
-tester" | ID=196 | Details=1 | Status=success
+tester | ID=194 | Details=383 | Status=success
+tester' | ID=195 | Details=30 | Status=success
+tester" | ID=196 | Details=30 | Status=success
 tester" | ID=197 | Details=30 | Status=success
 tester` | ID=198 | Details=30 | Status=success
 tester` | ID=199 | Details=30 | Status=success

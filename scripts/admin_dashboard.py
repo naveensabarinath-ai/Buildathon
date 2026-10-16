@@ -1,18 +1,20 @@
 """Local-only maintenance UI. Set ADMIN_PASSWORD in .env before launching."""
 import base64
 import hmac
-import importlib.util
 import json
 import os
 import subprocess
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 import streamlit as st
 from dotenv import load_dotenv
-from services import index_manager as manager
+from scripts import index_manager as manager
 
-ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / '.env')
 st.set_page_config(page_title='TamilNadu Agriculture : Admin Dashboard', page_icon='🌾', layout='wide')
 AGRICULTURE_ART = base64.b64encode(
@@ -34,29 +36,6 @@ def read_scheme_data():
     if not records:
         return None, 'Scheme JSON does not contain any scheme records.'
     return records, None
-
-
-@st.cache_data(ttl=60, show_spinner=False)
-def indexed_scheme_ids(index_path):
-    """Inspect trusted local FAISS metadata without making model API calls."""
-    index_dir = Path(index_path)
-    if not (index_dir / 'index.faiss').is_file() or not (index_dir / 'index.pkl').is_file():
-        return []
-    if not os.getenv('OPENAI_API_KEY'):
-        raise RuntimeError('OPENAI_API_KEY is required to inspect the local FAISS index.')
-    spec = importlib.util.spec_from_file_location(
-        'admin_scheme_retrieval', ROOT / 'pipeline' / 'scheme_retriever.py'
-    )
-    if spec is None or spec.loader is None:
-        raise RuntimeError('Could not load the FAISS retrieval module.')
-    retrieval = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(retrieval)
-    store = retrieval.load_store(index_dir)
-    return sorted({
-        str(document.metadata.get('scheme_id', '')).strip()
-        for document in retrieval.exact_documents(store)
-        if str(document.metadata.get('scheme_id', '')).strip()
-    })
 
 
 st.markdown(
@@ -193,11 +172,11 @@ st.sidebar.subheader('📊 Overview')
 sidebar_values = (
     len(scheme_records) if scheme_records else None,
     stats['chunks'] if stats else None,
-    stats['new_vectors'] if stats else None,
-    stats['estimated_tokens'] if stats else None,
+    stats['entities'] if stats else None,
+    stats['relations'] if stats else None,
 )
 for label, value in zip(
-    ['📄 Schemes', '🧩 Chunks', '✨ New vectors', '🧠 Est. tokens'],
+    ['📄 Schemes', '🧩 Chunks', '🔗 Entities', '🔁 Relations'],
     sidebar_values,
 ):
     st.sidebar.metric(label, f'{value:,}' if value is not None else '—')
@@ -220,7 +199,7 @@ with tab1:
             with st.spinner('Opening the TN Agriculture portal and extracting scheme data…'):
                 try:
                     result = subprocess.run(
-                        [sys.executable, str(ROOT / 'pipeline' / 'scrape_tn_agriculture_schemes.py')],
+                        [sys.executable, str(ROOT / 'scripts' / 'scrape_tn_agriculture_schemes.py')],
                         cwd=ROOT,
                         input='\n',
                         capture_output=True,
@@ -261,14 +240,17 @@ with tab1:
         else:
             st.success(f'✅ JSON ready · {len(scheme_records)} schemes')
             st.caption(f'Saved in `{manager.DATA.name}`')
-            try:
-                loaded_ids = set(indexed_scheme_ids(str(manager.INDEX)))
-                index_status_error = None
-            except Exception as exc:
-                loaded_ids = set()
-                index_status_error = str(exc)
-            if index_status_error:
-                st.warning(f'Could not inspect existing vector data: {index_status_error}')
+            graph_nodes = set()
+            if manager.GRAPH.is_file():
+                try:
+                    graph = manager.graph_retriever.load_graph(manager.GRAPH)
+                    graph_nodes = {
+                        str(attributes.get('scheme_id'))
+                        for _, attributes in graph.nodes(data=True)
+                        if attributes.get('kind') == 'scheme'
+                    }
+                except Exception as exc:
+                    st.warning(f'Could not inspect existing graph: {exc}')
             with st.expander(f"View schemes ({len(scheme_records)})"):
                 st.dataframe(
                     [
@@ -276,11 +258,11 @@ with tab1:
                             'scheme_id': str(x.get('scheme_id', '')),
                             'scheme_name': x.get('scheme_name', ''),
                             'scrape_status': x.get('detail_status', ''),
-                            'vector_store': (
-                                '✅ Already loaded'
-                                if str(x.get('scheme_id', '')).strip() in loaded_ids
+                            'knowledge_graph': (
+                                '✅ Loaded'
+                                if str(x.get('scheme_id', '')).strip() in graph_nodes
                                 else '➕ Not loaded'
-                            ) if not index_status_error else '❔ Unknown',
+                            ),
                         }
                         for x in scheme_records
                     ],
@@ -291,36 +273,55 @@ with tab1:
     with st.container(border=True):
         st.markdown(
             '<div class="step-heading"><span class="step-number">02</span>'
-            '<span>Load scheme JSON to vector store</span></div>',
+            '<span>Build knowledge graph</span></div>',
             unsafe_allow_html=True,
         )
-        st.caption('Text splitter  →  embeddings  →  FAISS')
+        st.caption('Text splitter  →  entity/relation extraction  →  NetworkX graph')
         if preview_error:
             st.error(f'Index preview unavailable: {preview_error}')
         elif stats:
             st.caption(
-                f"Chunks: {stats['chunks']:,} · New embeddings: {stats['new_vectors']:,} · "
-                f"Estimated tokens: {stats['estimated_tokens']:,}"
+                f"Chunks: {stats['chunks']:,} · Existing graph: "
+                f"{'current' if stats['unchanged_graph'] else 'needs build/refresh'}"
             )
-            confirm_index = st.checkbox('Enable loading JSON to the vector store')
+            if stats.get('graph_error'):
+                st.warning(f"Existing knowledge graph is invalid and will be rebuilt: {stats['graph_error']}")
+            elif stats.get('graph_present') and not stats.get('graph_current'):
+                st.warning('Knowledge graph is missing current index content and will be rebuilt.')
+            confirm_index = st.checkbox('Enable building the knowledge graph')
             if st.button(
-                '🧠 Load JSON scheme to vector store',
+                '🧠 Build knowledge graph from scheme JSON',
                 disabled=not bool(scheme_records) or not confirm_index,
                 type='primary',
             ):
-                with st.spinner('Splitting text, creating embeddings, and building FAISS…'):
-                    try:
-                        result = manager.build()
-                        st.session_state['index_load_message'] = result['message']
-                        st.session_state['index_load_tokens'] = result.get('actual_tokens', 0)
-                        indexed_scheme_ids.clear()
-                        st.rerun()
-                    except Exception as exc:
-                        st.error(f'Vector store load failed: {exc}')
+                progress = st.progress(0, text='Preparing graph extraction…')
+                progress_caption = st.empty()
+
+                def show_progress(completed, total):
+                    step = max(1, total // 200)
+                    if completed == total or completed % step == 0:
+                        progress.progress(
+                            completed / total,
+                            text=f'Extracting facts: {completed:,} / {total:,} chunks',
+                        )
+                        progress_caption.caption(
+                            'LLM extraction is running concurrently; this may take several minutes.'
+                        )
+
+                try:
+                    result = manager.build(progress_callback=show_progress)
+                    st.session_state['index_load_message'] = result['message']
+                    st.session_state['graph_extraction_calls'] = result.get('extraction_calls', 0)
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f'Knowledge graph build failed: {exc}')
         else:
-            st.error('Cannot prepare vector-store preview.')
+            st.error('Cannot prepare the knowledge-graph build preview.')
         if not scheme_records:
             st.caption('Complete Step 1 and load valid scheme JSON to enable this action.')
         if st.session_state.get('index_load_message'):
             st.success(st.session_state['index_load_message'])
-            st.metric('Embedding tokens used in this run', f"{st.session_state.get('index_load_tokens', 0):,}")
+            st.metric(
+                'Entity/relation extraction calls',
+                f"{st.session_state.get('graph_extraction_calls', 0):,}",
+            )
